@@ -1,4 +1,14 @@
+import { useState } from "react";
+
 export default function Navbar({ cartCount }) {
+    const [count, setCount] = useState(0);
+
+    let derivedCount;
+
+    const productCount = () => {
+        return "Something I don't know"
+    }
+
     return (
         <nav className="navbar" id="top">
             <a href="#top">🛒 MyStore</a>
