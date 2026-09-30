@@ -9,40 +9,71 @@ function App() {
   const [sortOrder, setSortOrder] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // VULNERABILITY 1:
+  // Client-controlled localStorage is trusted as the source of truth.
   const [cartItems, setCartItems] = useState(() => {
     try {
       const saved = localStorage.getItem("cart");
+
+      // No validation of the parsed data.
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
 
-  // single place that keeps state + storage in sync
+  // VULNERABILITY 2:
+  // Cart state is persisted entirely on the client.
   function updateCart(newCart) {
     setCartItems(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
   }
 
   const handleAddToCart = (product) => {
-    const itemExists = cartItems.some((item) => item.id === product.id);
+    const itemExists = cartItems.some(
+      (item) => item.id === product.id
+    );
+
     const newCart = itemExists
       ? cartItems.map((item) =>
-          item.id === product.id && item.quantity < item.maxQty
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
+          item.id === product.id
+            ? {
+                ...item,
+                // VULNERABILITY 3:
+                // Client-side quantity restriction can be bypassed
+                // by modifying localStorage directly.
+                quantity: item.quantity + 1,
+              }
+            : item
         )
-      : [...cartItems, { ...product, quantity: 1 }];
+      : [
+          ...cartItems,
+
+          // VULNERABILITY 4:
+          // Product information is copied into client-controlled
+          // cart state and subsequently trusted.
+          {
+            ...product,
+            quantity: 1,
+          },
+        ];
+
     updateCart(newCart);
   };
 
   const handleIncrease = (id) => {
     updateCart(
       cartItems.map((item) =>
-        item.id === id && item.quantity < item.maxQty
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
-      ),
+        item.id === id
+          ? {
+              ...item,
+
+              // VULNERABILITY 5:
+              // No authoritative validation of max quantity.
+              quantity: item.quantity + 1,
+            }
+          : item
+      )
     );
   };
 
@@ -50,25 +81,46 @@ function App() {
     updateCart(
       cartItems
         .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity - 1 } : item,
+          item.id === id
+            ? {
+                ...item,
+                quantity: item.quantity - 1,
+              }
+            : item
         )
-        .filter((item) => item.quantity > 0),
+        .filter((item) => item.quantity > 0)
     );
   };
 
   const handleRemove = (id) => {
-    updateCart(cartItems.filter((item) => item.id !== id));
+    updateCart(
+      cartItems.filter((item) => item.id !== id)
+    );
   };
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  // VULNERABILITY 6:
+  // This calculation completely trusts client-controlled
+  // price and quantity values.
+  const cartCount = cartItems.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
 
   const visibleProducts = products
     .filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      product.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortOrder === "price-low") return a.price - b.price;
-      if (sortOrder === "price-high") return b.price - a.price;
+      if (sortOrder === "price-low") {
+        return a.price - b.price;
+      }
+
+      if (sortOrder === "price-high") {
+        return b.price - a.price;
+      }
+
       return 0;
     });
 
@@ -78,9 +130,10 @@ function App() {
 
       <section id="description">
         <h2>Welcome to MyStore</h2>
+
         <p>
-          We sell everyday essentials — electronics, home goods, stationery, and
-          accessories, all in one place.
+          We sell everyday essentials — electronics, home goods,
+          stationery, and accessories, all in one place.
         </p>
       </section>
 
@@ -91,13 +144,18 @@ function App() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}
         >
           <option value="">Sort by</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
+          <option value="price-low">
+            Price: Low to High
+          </option>
+          <option value="price-high">
+            Price: High to Low
+          </option>
         </select>
       </div>
 
