@@ -1,12 +1,12 @@
-name: Lint React App
+name: Lint and SonarQube
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,3 +21,16 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+  sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
