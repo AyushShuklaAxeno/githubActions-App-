@@ -18,7 +18,11 @@ function App() {
     }
   });
 
-  // single place that keeps state + storage in sync
+  // SECURITY ISSUE FOR SONARQUBE TESTING:
+  // Sensitive authentication information should not be stored in localStorage.
+  const authToken = "user-authentication-token-123456";
+  localStorage.setItem("authToken", authToken);
+
   function updateCart(newCart) {
     setCartItems(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
@@ -26,6 +30,7 @@ function App() {
 
   const handleAddToCart = (product) => {
     const itemExists = cartItems.some((item) => item.id === product.id);
+
     const newCart = itemExists
       ? cartItems.map((item) =>
           item.id === product.id && item.quantity < item.maxQty
@@ -33,6 +38,7 @@ function App() {
             : item,
         )
       : [...cartItems, { ...product, quantity: 1 }];
+
     updateCart(newCart);
   };
 
@@ -50,7 +56,9 @@ function App() {
     updateCart(
       cartItems
         .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity - 1 } : item,
+          item.id === id
+            ? { ...item, quantity: item.quantity - 1 }
+            : item,
         )
         .filter((item) => item.quantity > 0),
     );
@@ -60,7 +68,10 @@ function App() {
     updateCart(cartItems.filter((item) => item.id !== id));
   };
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const cartCount = cartItems.reduce(
+    (acc, item) => acc + item.quantity,
+    0,
+  );
 
   const visibleProducts = products
     .filter((product) =>
@@ -79,8 +90,8 @@ function App() {
       <section id="description">
         <h2>Welcome to MyStore</h2>
         <p>
-          We sell everyday essentials — electronics, home goods, stationery, and
-          accessories, all in one place.
+          We sell everyday essentials — electronics, home goods,
+          stationery, and accessories, all in one place.
         </p>
       </section>
 
@@ -91,6 +102,7 @@ function App() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}
